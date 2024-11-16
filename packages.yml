@@ -30,15 +30,25 @@
         repo: "deb https://packages.grafana.com/oss/deb stable main"
         state: present
 
-    - name: Install Grafana
+    - name: Install grafana-alloy
       apt:
-        name: grafana
+        name: alloy
         state: present
         update_cache: yes
         cache_valid_time: 3600
       notify: 
-        - Restart grafana-server
-        - Enable grafana-server service
+        - Restart grafana-alloy
+        - Enable grafana-alloy service
+
+    # - name: Install Grafana
+    #   apt:
+    #     name: grafana
+    #     state: present
+    #     update_cache: yes
+    #     cache_valid_time: 3600
+    #   notify: 
+    #     - Restart grafana-server
+    #     - Enable grafana-server service
 
     - name: Ensure apache2 is running
       ansible.builtin.systemd:
@@ -47,12 +57,19 @@
         enabled: true
       notify: Enable apache2 service
 
-    - name: Ensure grafana-server is running
+    - name: Ensure grafana-alloy is running
       ansible.builtin.systemd:
-        name: grafana-server
+        name: alloy
         state: started
         enabled: true
-      notify: Enable grafana-server service
+      notify: Enable grafana-alloy service
+
+    # - name: Ensure grafana-server is running
+    #   ansible.builtin.systemd:
+    #     name: grafana-server
+    #     state: started
+    #     enabled: true
+    #   notify: Enable grafana-server service
 
   handlers:
     - name: Restart apache2
@@ -67,14 +84,26 @@
         enabled: yes
         state: started
     
-    - name: Restart grafana-server
+    - name: Restart grafana-alloy
       service:
-        name: grafana-server
+        name: alloy
         state: restarted
-      notify: Enable grafana-server service
+      notify: Enable grafana-alloy service
     
-    - name: Enable grafana-server service
+    - name: Enable grafana-alloy service
       systemd:
-        name: grafana-server
+        name: alloy
         enabled: yes
         state: started
+
+    # - name: Restart grafana-server
+    #   service:
+    #     name: grafana-server
+    #     state: restarted
+    #   notify: Enable grafana-server service
+    
+    # - name: Enable grafana-server service
+    #   systemd:
+    #     name: grafana-server
+    #     enabled: yes
+    #     state: started

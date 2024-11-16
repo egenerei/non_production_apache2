@@ -150,15 +150,6 @@
       command: a2enmod rewrite
       notify: Restart apache2
       changed_when: false
-
-    - name: Check if certbot can get certificates
-      command: certbot renew --dry-run
-      register: certbot_output
-      ignore_errors: yes
-
-    - name: Echo certbot command output
-      debug:
-        var: certbot_output.stdout_lines
   
   handlers:
     - name: Restart apache2

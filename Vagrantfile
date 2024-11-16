@@ -17,6 +17,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "web_non_production" do |web1|
     web1.vm.network "public_network", ip: "192.168.1.40", bridge: "enp6s0"
+    # web1.vm.network config.vm.network "forwarded_port", guest: 3000, host: 8080
   end
 
 end
