@@ -2,8 +2,8 @@
 .vagrant
 *.key
 *.crt
-*cert*/
 .vscode
 z*
 dns*.sh
 pruebas.yml
+*.pem
