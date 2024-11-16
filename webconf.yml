@@ -1,0 +1,165 @@
+---
+- name: Configure web server
+  hosts: webservers
+  become: true
+  vars:
+    admin_passwd: /etc/apache2/admin/.htpasswd
+    sysadmin_passwd: /etc/apache2/sysadmin/.htpasswd
+    conf_file: /etc/apache2/apache2.conf
+    user: vagrant
+    scripts: /home/{{user}}/scripts
+    certs: /etc/letsencrypt/live/egenerei.es
+  tasks:
+    
+    - name: Create directory for cert/key
+      file: 
+        path: /etc/letsencrypt/live/egenerei.es
+        state: directory
+        mode: '0755'
+
+    - name: Copy cert/key/chain files to server
+      copy:
+        src: certs/
+        dest: "{{certs}}/"
+        owner: www-data
+        group: www-data
+        mode: '0755'
+      notify:
+        - Restart apache2
+      
+    - name: Stablish permissions for private key
+      file:
+        path: "{{ certs }}/privkey.pem"
+        mode: '0600'
+        owner: www-data
+        group: www-data
+
+    - name: Stablish permissions for certificate
+      file:
+        path: "{{ certs }}/cert.pem"
+        mode: '0644'
+        owner: www-data
+        group: www-data
+
+    - name: Stablish permissions for chain
+      file:
+        path: "{{ certs }}/chain.pem"
+        mode: '0644'
+        owner: www-data
+        group: www-data
+
+    - name: Create directory for admin credentials
+      file: 
+        path: /etc/apache2/admin 
+        state: directory
+        mode: '0755'
+
+    - name: Create directory for sysadmin credentials
+      file: 
+        path: /etc/apache2/sysadmin 
+        state: directory
+        mode: '0755'
+
+    - name: Copy admin credentials
+      template: 
+        src: website_conf/admin/.htpasswd
+        dest: "{{ admin_passwd }}"
+      notify: 
+        - Restart apache2
+
+    - name: Copy sysadmin credentials
+      template: 
+        src: website_conf/sysadmin/.htpasswd
+        dest: "{{ sysadmin_passwd }}"
+      notify: 
+        - Restart apache2
+
+    - name: Stablish permissions for admin credentials
+      file:
+        path: "{{ admin_passwd }}"
+        mode: '0640'
+        owner: www-data
+        group: www-data
+
+    - name: Stablish permissions for sysadmin credentials
+      file:
+        path: "{{ sysadmin_passwd }}"
+        mode: '0640'
+        owner: www-data
+        group: www-data
+
+    - name: Disable the current site/s configuration
+      command:
+        cmd: a2dissite 000-default.conf default-ssl.conf root.conf
+      ignore_errors: yes
+
+    - name: Copy new configuration file root.conf to server
+      template: 
+        src: website_conf/root.conf
+        dest: "/etc/apache2/sites-available/"
+      notify:
+        - Restart apache2
+
+    - name: Enable new configuration file root.conf
+      command:
+        cmd: a2ensite root.conf 
+      notify:
+        - Restart apache2
+
+    - name: Copy website files to website root directory
+      copy:
+        src: website/
+        dest: /var/www/html/
+        owner: www-data
+        group: www-data
+        mode: '0755'
+      notify:
+        - Restart apache2
+
+    - name: Enable headers module in Apache2
+      command: a2enmod headers
+      notify: Restart apache2
+      changed_when: false
+
+    - name: Enable mime module in Apache2
+      command: a2enmod mime
+      notify: Restart apache2
+      changed_when: false
+
+    - name: Enable status module in Apache2
+      command: a2enmod status
+      notify: Restart apache2
+      changed_when: false
+
+    - name: Enable proxy module in Apache2
+      command: a2enmod proxy
+      notify: Restart apache2
+      changed_when: false
+
+    - name: Enable proxy_http module in Apache2
+      command: a2enmod proxy_http
+      notify: Restart apache2
+      changed_when: false
+
+    - name: Enable ssl module in Apache2
+      command: a2enmod ssl
+      notify: Restart apache2
+      changed_when: false
+
+    - name: Enable rewrite module in Apache2
+      command: a2enmod rewrite
+      notify: Restart apache2
+      changed_when: false
+  
+  handlers:
+    - name: Restart apache2
+      service:
+        name: apache2
+        state: restarted
+      notify: Enable apache2 service
+
+    - name: Enable apache2 service
+      systemd:
+        name: apache2
+        enabled: yes
+        state: started

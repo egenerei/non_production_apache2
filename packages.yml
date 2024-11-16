@@ -1,0 +1,80 @@
+---
+- name: Configure web server
+
+  hosts: webservers
+  
+  become: true
+
+  tasks:
+
+    - name: Install required packages for hosting
+      apt:
+        name:
+          - curl
+          - apache2
+          - php
+          - libapache2-mod-php
+          - certbot
+          - python3-certbot-apache
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    - name: Add Grafana GPG key
+      apt_key:
+        url: https://packages.grafana.com/gpg.key
+        state: present
+
+    - name: Add Grafana APT repository
+      apt_repository:
+        repo: "deb https://packages.grafana.com/oss/deb stable main"
+        state: present
+
+    - name: Install Grafana
+      apt:
+        name: grafana
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+      notify: 
+        - Restart grafana-server
+        - Enable grafana-server service
+
+    - name: Ensure apache2 is running
+      ansible.builtin.systemd:
+        name: apache2
+        state: started
+        enabled: true
+      notify: Enable apache2 service
+
+    - name: Ensure grafana-server is running
+      ansible.builtin.systemd:
+        name: grafana-server
+        state: started
+        enabled: true
+      notify: Enable grafana-server service
+
+  handlers:
+    - name: Restart apache2
+      service:
+        name: apache2
+        state: restarted
+      notify: Enable apache2 service
+
+    - name: Enable apache2 service
+      systemd:
+        name: apache2
+        enabled: yes
+        state: started
+    
+    - name: Restart grafana-server
+      service:
+        name: grafana-server
+        state: restarted
+      notify: Enable grafana-server service
+    
+    - name: Enable grafana-server service
+      systemd:
+        name: grafana-server
+        enabled: yes
+        state: started
