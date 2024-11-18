@@ -92,6 +92,60 @@
         mode: '0644'
       notify: Start node_exporter
 
+    - name: Download Prometheus with wget
+      ansible.builtin.command:
+        cmd: wget -O "{{ home }}/prometheus.tar.gz" https://github.com/prometheus/prometheus/releases/download/v3.0.0/prometheus-3.0.0.linux-amd64.tar.gz
+        creates: "{{ home }}/prometheus.tar.gz"
+      args:
+        chdir: "{{ home }}"
+    
+    - name: Extract Prometheus
+      ansible.builtin.unarchive:
+        src: "{{ home }}/prometheus.tar.gz"
+        dest: "{{ home }}"
+        remote_src: yes
+      
+    - name: Get the extracted Prometheus directory name
+      ansible.builtin.find:
+        paths: "{{ home }}"
+        patterns: "prometheus-3.0.0.linux-amd64"
+        file_type: directory
+      register: prometheus_dir
+      
+    - name: Rename Prometheus directory
+      ansible.builtin.command:
+        cmd: mv "{{ prometheus_dir.files[0].path }}" "{{ home }}/prometheus"
+      when: prometheus_dir.files | length > 0
+      
+    - name: Ensure Prometheus data directory exists
+      ansible.builtin.file:
+        path: "{{ home }}/prometheus/data"
+        state: directory
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: '0755'
+
+    - name: Ensure Prometheus binary has correct permissions
+      ansible.builtin.file:
+        path: "{{ home }}/prometheus/prometheus"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: '0755'
+
+    - name: Ensure Prometheus data directory has correct permissions
+      ansible.builtin.file:
+        path: "{{ home }}/prometheus/data"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: '0755'
+
+    - name: Create systemd service file for Prometheus
+      ansible.builtin.template:
+        src: services/prometheus.service.j2
+        dest: /etc/systemd/system/prometheus.service
+        mode: '0644'
+      notify: Reload and start Prometheus
+
     # - name: Install grafana-alloy
     #   apt:
     #     name: alloy
@@ -156,5 +210,11 @@
     - name: Enable node_exporter
       systemd:
         name: node_exporter
+        enabled: yes
+        state: started
+
+    - name: Reload and start Prometheus
+      ansible.builtin.systemd:
+        name: prometheus
         enabled: yes
         state: started
