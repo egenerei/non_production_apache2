@@ -1,0 +1,14 @@
+[Unit]
+Description=Prometheus
+After=network.target
+
+[Service]
+User={{ user }}
+WorkingDirectory={{ home }}/prometheus
+ExecStart={{ home }}/prometheus/prometheus --config.file={{ home }}/prometheus/prometheus.yml
+Restart=always
+LimitNOFILE=4096
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
