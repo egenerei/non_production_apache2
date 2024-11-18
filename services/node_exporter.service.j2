@@ -1,0 +1,12 @@
+[Unit]
+Description=Node Exporter
+After=network-online.target NetworkManager.service
+Wants=network-online.target
+
+[Service]
+User={{ ansible_user }}
+ExecStart={{ home }}/node_exporter/node_exporter
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
